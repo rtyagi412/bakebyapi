@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: bakebyapi
+  datasource:
+    # Local-dev defaults match docker-compose.yml; override via env vars elsewhere.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/bakeby}
+    username: ${DB_USER:bakeby}
+    password: ${DB_PASSWORD:bakeby}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+bakeby:
+  currency: INR

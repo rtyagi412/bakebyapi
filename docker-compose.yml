@@ -1,0 +1,21 @@
+# Local development database only. Credentials are dev defaults, not for deployment.
+services:
+  postgres:
+    image: postgres:17
+    container_name: bakeby-postgres
+    environment:
+      POSTGRES_DB: bakeby
+      POSTGRES_USER: bakeby
+      POSTGRES_PASSWORD: bakeby
+    ports:
+      - "5432:5432"
+    volumes:
+      - bakeby-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bakeby -d bakeby"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  bakeby-pgdata:

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schemastore.org",
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": false,
+    "blockWritesOutsideWorkingDirectories": false,
+    "allow": [
+      "Bash(git *)",
+      "Bash(./mvnw *)",
+      "Bash(mvn *)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)",
+      "Bash(echo *)",
+      "Bash(pwd)",
+      "Bash(which *)",
+      "Bash(wc *)",
+      "Bash(sort *)",
+      "Bash(diff *)",
+      "Bash(pwsh *)",
+      "Bash(powershell *)",
+      "PowerShell(git *)",
+      "PowerShell(./mvnw *)",
+      "PowerShell(mvn *)",
+      "PowerShell(docker *)",
+      "PowerShell(Get-*)",
+      "PowerShell(Select-*)",
+      "PowerShell(Where-*)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(Move-Item *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~/*)",
+      "Bash(git push --force *)",
+      "PowerShell(Remove-Item -Recurse -Force C:\\*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Glob|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/block_sensitive_reads.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking for sensitive file access..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_written_files.py\"",
+            "timeout": 90,
+            "statusMessage": "Formatting file..."
+          }
+        ]
+      }
+    ]
+  }
+}
