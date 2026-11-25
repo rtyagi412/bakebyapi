@@ -37,7 +37,7 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
   - Covers: Testing Plan.
   - Depends on: 1.1
   - Done when: `./mvnw test` passes with the context loading against a container (before any migration, an empty-baseline migration or Flyway with no scripts allowed).
-- [ ] **1.5 Common error handling and utilities**
+- [x] **1.5 Common error handling and utilities**
   - Do: Under `catalog/common`: `NotFoundException`, `ConflictException`, `@RestControllerAdvice` mapping to ProblemDetail (400 validation with `errors` map, 400 malformed body/params, 404, 409, and `DataIntegrityViolationException` to 409); `SlugUtil` (slugify, pattern, reject all-digit slugs); pagination helper (default 20, max 100, whitelisted sort fields, unknown sort returns 400).
   - Covers: FR 7; spec Behavior (slug, pagination); edge cases on size clamping and unknown sort.
   - Depends on: 1.1
