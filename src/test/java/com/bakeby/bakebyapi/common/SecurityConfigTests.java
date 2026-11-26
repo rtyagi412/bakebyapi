@@ -20,6 +20,10 @@ class SecurityConfigTests {
     @Autowired
     private MockMvc mockMvc;
 
+    /** The slice now picks up AdminCategoryController, which needs its service. */
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.bakeby.bakebyapi.catalog.service.CategoryService categoryService;
+
     private int status(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
             throws Exception {
         return mockMvc.perform(request).andReturn().getResponse().getStatus();

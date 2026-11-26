@@ -62,12 +62,12 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
 
 **Goal:** Category admin CRUD works end to end.
 
-- [ ] **3.1 Category service and DTOs**
+- [x] **3.1 Category service and DTOs**
   - Do: Create request/response records with validation, `CategoryService` with slug generation (409 on collision), duplicate-name 409, soft delete blocked (409) when active products exist, idempotent delete.
   - Covers: FR 1, 4, 6, 7.
   - Depends on: 2.2, 1.5
   - Done when: service tests pass for create, slug, duplicate name, delete-with-active-products.
-- [ ] **3.2 Admin category controller**
+- [x] **3.2 Admin category controller**
   - Do: Create `AdminCategoryController` at `/api/v1/admin/categories` (POST 201 + Location, GET list with `includeInactive`, GET/PUT/DELETE by id).
   - Covers: FR 1, 6, 7; AC 4, 6.
   - Depends on: 3.1
