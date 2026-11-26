@@ -8,6 +8,6 @@ import jakarta.validation.constraints.Size;
 public record CategoryCreateRequest(
         @NotBlank @Size(max = 100) String name,
         @Size(max = 120) @Pattern(regexp = SlugUtil.SLUG_REGEX, message = "must be a lowercase slug (a-z, 0-9, '-')") String slug,
-        String description,
+        @Size(max = 2000) String description,
         Boolean active) {
 }

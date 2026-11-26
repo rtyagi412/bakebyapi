@@ -17,7 +17,10 @@ public interface CategoryMapper {
 
     CategoryResponse toResponse(Category category);
 
-    /** Slug changes only when supplied, so the service handles it. */
+    /**
+     * Slug changes only when supplied, so the service handles it.
+     * PUT is full replacement, so an omitted description is cleared.
+     */
     @Mapping(target = "slug", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

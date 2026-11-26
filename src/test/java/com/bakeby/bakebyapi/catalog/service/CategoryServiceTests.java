@@ -17,6 +17,10 @@ import com.bakeby.bakebyapi.common.BadRequestException;
 import com.bakeby.bakebyapi.common.ConflictException;
 import com.bakeby.bakebyapi.common.NotFoundException;
 import com.bakeby.bakebyapi.common.PageResponse;
+import com.bakeby.bakebyapi.common.PageRequests;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.AfterEach;
@@ -248,5 +252,165 @@ class CategoryServiceTests extends AbstractIntegrationTest {
     @Test
     void getThrowsNotFoundForMissingId() {
         assertThatThrownBy(() -> service.get(999999L)).isInstanceOf(NotFoundException.class);
+    }
+
+    private static final String ACTIVE_PRODUCTS_MSG =
+            "Category has active products and cannot be deactivated or deleted";
+
+    @Test
+    void deleteConflictUsesDeactivateOrDeleteMessage() {
+        CategoryResponse c = create("Cakes");
+        addProduct(c.id(), true);
+        assertThatThrownBy(() -> service.delete(c.id()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ACTIVE_PRODUCTS_MSG);
+    }
+
+    @Test
+    void updateActiveFalseThrowsConflictWhenCategoryHasActiveProducts() {
+        CategoryResponse c = create("Cakes");
+        addProduct(c.id(), true);
+        assertThatThrownBy(() -> service.update(c.id(), new CategoryUpdateRequest("Cakes", null, null, false)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ACTIVE_PRODUCTS_MSG);
+        assertThat(service.get(c.id()).active()).isTrue();
+    }
+
+    @Test
+    void updateActiveFalseSucceedsWhenOnlyInactiveProducts() {
+        CategoryResponse c = create("Cakes");
+        addProduct(c.id(), false);
+        assertThat(service.update(c.id(), new CategoryUpdateRequest("Cakes", null, null, false)).active()).isFalse();
+    }
+
+    @Test
+    void updateActiveFalseSucceedsWhenNoProducts() {
+        CategoryResponse c = create("Cakes");
+        assertThat(service.update(c.id(), new CategoryUpdateRequest("Cakes", null, null, false)).active()).isFalse();
+    }
+
+    @Test
+    void updateActiveFalseOnAlreadyInactiveCategoryIsAllowed() {
+        CategoryResponse c = create("Cakes");
+        addProduct(c.id(), true);
+        categories.findById(c.id()).ifPresent(x -> {
+            x.setActive(false);
+            categories.saveAndFlush(x);
+        });
+        assertThat(service.update(c.id(), new CategoryUpdateRequest("Cakes", null, null, false)).active()).isFalse();
+    }
+
+    @Test
+    void updateKeepingActiveTrueWithActiveProductsIsAllowed() {
+        CategoryResponse c = create("Cakes");
+        addProduct(c.id(), true);
+        assertThat(service.update(c.id(), new CategoryUpdateRequest("Cakes", null, "d", true)).active()).isTrue();
+    }
+
+    @Test
+    void createTrimsNameBeforeStoring() {
+        CategoryResponse r = create("  Cakes  ");
+        assertThat(r.name()).isEqualTo("Cakes");
+        assertThat(categories.findById(r.id()).orElseThrow().getName()).isEqualTo("Cakes");
+        assertThat(r.slug()).isEqualTo("cakes");
+    }
+
+    @Test
+    void createThrowsConflictWhenTrimmedNameMatchesExistingIgnoringCase() {
+        create("cakes");
+        assertThatThrownBy(() -> service.create(new CategoryCreateRequest(" Cakes ", "other", null, null)))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void updateTrimsNameBeforeStoring() {
+        CategoryResponse c = create("Cakes");
+        assertThat(service.update(c.id(), new CategoryUpdateRequest("  Tarts ", null, null, true)).name())
+                .isEqualTo("Tarts");
+        assertThat(categories.findById(c.id()).orElseThrow().getName()).isEqualTo("Tarts");
+    }
+
+    @Test
+    void updateThrowsConflictWhenTrimmedNameMatchesAnotherCategory() {
+        create("cakes");
+        CategoryResponse pies = create("Pies");
+        assertThatThrownBy(() -> service.update(pies.id(), new CategoryUpdateRequest(" Cakes ", null, null, true)))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void createWithNumericNameAndNoSlugGivesDeriveMessage() {
+        assertThatThrownBy(() -> create("123"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Cannot derive a slug from the name; supply a slug");
+    }
+
+    @Test
+    void createWithPunctuationOnlyNameAndNoSlugGivesDeriveMessage() {
+        assertThatThrownBy(() -> create("!!!"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Cannot derive a slug from the name; supply a slug");
+    }
+
+    @Test
+    void createWithExplicitInvalidSlugKeepsInvalidSlugMessage() {
+        assertThatThrownBy(() -> service.create(new CategoryCreateRequest("Numbers", "123", null, null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageStartingWith("Invalid slug");
+    }
+
+    @Test
+    void updateValidatesSlugBeforeNameConflictCheck() {
+        create("Cakes");
+        CategoryResponse pies = create("Pies");
+        assertThatThrownBy(() -> service.update(pies.id(), new CategoryUpdateRequest("Cakes", "42", null, true)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageStartingWith("Invalid slug");
+    }
+
+    @Test
+    void updateWithoutDescriptionClearsExistingDescription() {
+        CategoryResponse c = service.create(new CategoryCreateRequest("Cakes", null, "old", null));
+        CategoryResponse u = service.update(c.id(), new CategoryUpdateRequest("Cakes", null, null, true));
+        assertThat(u.description()).isNull();
+        assertThat(categories.findById(c.id()).orElseThrow().getDescription()).isNull();
+    }
+
+    @Test
+    void updateWithoutSlugKeepsExistingSlug() {
+        CategoryResponse c = service.create(new CategoryCreateRequest("Cakes", "my-slug", null, null));
+        assertThat(service.update(c.id(), new CategoryUpdateRequest("Cakes", null, null, true)).slug())
+                .isEqualTo("my-slug");
+    }
+
+    @Test
+    void listSortedByCreatedAtBreaksTiesByAscendingIdWithoutDuplicatesOrGaps() {
+        List<Long> ids = new ArrayList<>();
+        for (String n : new String[] {"A", "B", "C", "D", "E"}) {
+            ids.add(create(n).id());
+        }
+        // Two tie groups: the first two rows share a later timestamp, the last three an earlier one.
+        jdbc.update("UPDATE category SET created_at = TIMESTAMPTZ '2024-01-02 00:00:00+00' WHERE id IN (?, ?)",
+                ids.get(0), ids.get(1));
+        jdbc.update("UPDATE category SET created_at = TIMESTAMPTZ '2024-01-01 00:00:00+00' WHERE id IN (?, ?, ?)",
+                ids.get(2), ids.get(3), ids.get(4));
+        List<Long> expected = List.of(ids.get(2), ids.get(3), ids.get(4), ids.get(0), ids.get(1));
+
+        List<Long> seen = new ArrayList<>();
+        for (int p = 0; p < 3; p++) {
+            service.list(true, PageRequests.of(p, 2, "createdAt", Set.of("createdAt")))
+                    .content().forEach(r -> seen.add(r.id()));
+        }
+        assertThat(seen).doesNotHaveDuplicates().containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    void createStripsNonBreakingSpacePaddingAndConflictsWithUnpaddedName() {
+        CategoryResponse created = create(" Cakes ");
+        assertThat(created.name()).isEqualTo("Cakes");
+        assertThatThrownBy(() -> service.create(new CategoryCreateRequest("Cakes", "other", null, null)))
+                .isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> service.create(new CategoryCreateRequest(" cakes ", "other2", null, null)))
+                .isInstanceOf(ConflictException.class);
     }
 }

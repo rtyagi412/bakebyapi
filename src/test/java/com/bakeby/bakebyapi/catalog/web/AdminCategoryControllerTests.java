@@ -1,5 +1,6 @@
 package com.bakeby.bakebyapi.catalog.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
@@ -20,6 +21,10 @@ import com.bakeby.bakebyapi.catalog.domain.Product;
 import com.bakeby.bakebyapi.catalog.domain.ProductDetails;
 import com.bakeby.bakebyapi.catalog.repository.CategoryRepository;
 import com.bakeby.bakebyapi.catalog.repository.ProductRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +60,7 @@ class AdminCategoryControllerTests extends AbstractIntegrationTest {
         return mvc.perform(put(BASE + "/" + id).contentType(MediaType.APPLICATION_JSON).content(body));
     }
 
-    private long seed(String name, boolean active) {
+    private Long seed(String name, boolean active) {
         return categories.saveAndFlush(Category.builder().name(name)
                 .slug(name.toLowerCase().replace(' ', '-')).active(active).build()).getId();
     }
@@ -392,6 +397,167 @@ class AdminCategoryControllerTests extends AbstractIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith(PROBLEM));
         mvc.perform(get(BASE + "/" + id)).andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    void deleteConflictBodyUsesDeactivateOrDeleteMessage() throws Exception {
+        long id = seed("Cakes", true);
+        addActiveProduct(id);
+        mvc.perform(delete(BASE + "/" + id))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail")
+                        .value("Category has active products and cannot be deactivated or deleted"));
+    }
+
+    private void addActiveProduct(long categoryId) {
+        Category c = categories.findById(categoryId).orElseThrow();
+        products.saveAndFlush(Product.builder().category(c).name("P").slug("p")
+                .details(ProductDetails.builder().dietaryType(DietaryType.VEG).build()).build());
+    }
+
+    // ---- new behaviors ----
+
+    @Test
+    void updateActiveFalseReturns409WhenCategoryHasActiveProducts() throws Exception {
+        long id = seed("Cakes", true);
+        addActiveProduct(id);
+        putJson(id, "{\"name\":\"Cakes\",\"active\":false}")
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM))
+                .andExpect(jsonPath("$.detail")
+                        .value("Category has active products and cannot be deactivated or deleted"));
+        mvc.perform(get(BASE + "/" + id)).andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    void updateActiveFalseReturns200WhenNoActiveProducts() throws Exception {
+        long id = seed("Cakes", true);
+        putJson(id, "{\"name\":\"Cakes\",\"active\":false}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+    }
+
+    @Test
+    void updateActiveFalseReturns200WhenAlreadyInactive() throws Exception {
+        long id = seed("Cakes", false);
+        addActiveProduct(id);
+        putJson(id, "{\"name\":\"Cakes\",\"active\":false}").andExpect(status().isOk());
+    }
+
+    @Test
+    void createTrimsNameAndStoresTrimmed() throws Exception {
+        postJson("{\"name\":\" Cakes \"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Cakes"))
+                .andExpect(jsonPath("$.slug").value("cakes"));
+    }
+
+    @Test
+    void createReturns409WhenTrimmedNameMatchesExistingIgnoringCase() throws Exception {
+        seed("cakes", true);
+        postJson("{\"name\":\" Cakes \",\"slug\":\"other\"}")
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM));
+    }
+
+    @Test
+    void createReturns400WhenDescriptionTooLong() throws Exception {
+        postJson("{\"name\":\"X\",\"description\":\"" + "d".repeat(2001) + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM))
+                .andExpect(jsonPath("$.errors.description").exists());
+    }
+
+    @Test
+    void createAcceptsDescriptionOfExactly2000Chars() throws Exception {
+        postJson("{\"name\":\"X\",\"description\":\"" + "d".repeat(2000) + "\"}")
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void updateReturns400WhenDescriptionTooLong() throws Exception {
+        long id = seed("Cakes", true);
+        putJson(id, "{\"name\":\"Cakes\",\"active\":true,\"description\":\"" + "d".repeat(2001) + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM))
+                .andExpect(jsonPath("$.errors.description").exists());
+    }
+
+    @Test
+    void createReturns400WithDeriveMessageForNumericNameWithoutSlug() throws Exception {
+        postJson("{\"name\":\"123\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM))
+                .andExpect(jsonPath("$.detail").value("Cannot derive a slug from the name; supply a slug"));
+    }
+
+    @Test
+    void createReturns400WithDeriveMessageForPunctuationNameWithoutSlug() throws Exception {
+        postJson("{\"name\":\"!!!\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Cannot derive a slug from the name; supply a slug"));
+    }
+
+    @Test
+    void createReturns400WithInvalidSlugMessageForExplicitAllDigitSlug() throws Exception {
+        postJson("{\"name\":\"X\",\"slug\":\"123\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail", containsString("Invalid slug")));
+    }
+
+    @Test
+    void updateReturns400NotConflictWhenSlugInvalidAndNameConflicts() throws Exception {
+        seed("Cakes", true);
+        long pies = seed("Pies", true);
+        putJson(pies, "{\"name\":\"Cakes\",\"slug\":\"42\",\"active\":true}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail", containsString("Invalid slug")));
+    }
+
+    @Test
+    void updateOmittingDescriptionClearsIt() throws Exception {
+        long id = seed("Cakes", true);
+        putJson(id, "{\"name\":\"Cakes\",\"description\":\"old\",\"active\":true}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value("old"));
+        putJson(id, "{\"name\":\"Cakes\",\"active\":true}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").doesNotExist());
+        mvc.perform(get(BASE + "/" + id)).andExpect(jsonPath("$.description").doesNotExist());
+    }
+
+    @Test
+    void listWithTiedSortKeyPagesInAscendingIdOrderWithoutDuplicatesOrGaps() throws Exception {
+        List<Long> ids = new ArrayList<>();
+        for (String n : new String[] {"A", "B", "C", "D", "E"}) {
+            ids.add(seed(n, true));
+        }
+        // Two tie groups: first two rows share a later created_at, last three an earlier one.
+        jdbc.update("UPDATE category SET created_at = TIMESTAMPTZ '2024-01-02 00:00:00+00' WHERE id IN (?, ?)",
+                ids.get(0), ids.get(1));
+        jdbc.update("UPDATE category SET created_at = TIMESTAMPTZ '2024-01-01 00:00:00+00' WHERE id IN (?, ?, ?)",
+                ids.get(2), ids.get(3), ids.get(4));
+        List<Long> expected = List.of(ids.get(2), ids.get(3), ids.get(4), ids.get(0), ids.get(1));
+
+        List<Long> seen = new ArrayList<>();
+        for (int p = 0; p < 3; p++) {
+            String body = mvc.perform(get(BASE).param("page", String.valueOf(p)).param("size", "2")
+                            .param("sort", "createdAt"))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            Matcher m = Pattern.compile("\"id\":(\\d+)").matcher(body);
+            while (m.find()) {
+                seen.add(Long.valueOf(m.group(1)));
+            }
+        }
+        assertThat(seen).doesNotHaveDuplicates().containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    void createReturns409WhenNameWithNonBreakingSpacePaddingMatchesUnpaddedName() throws Exception {
+        postJson("{\"name\":\"Cakes\"}").andExpect(status().isCreated());
+        postJson("{\"name\":\"\u00A0Cakes\u00A0\",\"slug\":\"other\"}")
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM));
     }
 
     @Test

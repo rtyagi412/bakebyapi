@@ -1,10 +1,13 @@
 package com.bakeby.bakebyapi.common;
 
+import com.bakeby.bakebyapi.catalog.service.CategoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -21,11 +24,10 @@ class SecurityConfigTests {
     private MockMvc mockMvc;
 
     /** The slice now picks up AdminCategoryController, which needs its service. */
-    @org.springframework.test.context.bean.override.mockito.MockitoBean
-    private com.bakeby.bakebyapi.catalog.service.CategoryService categoryService;
+    @MockitoBean
+    private CategoryService categoryService;
 
-    private int status(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
-            throws Exception {
+    private int status(MockHttpServletRequestBuilder request) throws Exception {
         return mockMvc.perform(request).andReturn().getResponse().getStatus();
     }
 

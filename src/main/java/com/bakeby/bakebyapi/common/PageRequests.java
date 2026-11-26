@@ -24,9 +24,15 @@ public final class PageRequests {
     }
 
     /**
+     * Builds a {@link Pageable}. The property {@code id} is always appended as the final tiebreaker
+     * sort key (ascending) so paging order is stable, even if {@code id} is not in
+     * {@code allowedSortFields}. Every entity sorted through this method must therefore have an
+     * {@code id} property.
+     *
      * @param page   0-based page; null defaults to 0, negative throws {@link BadRequestException}
      * @param size   null defaults to 20, above 100 is clamped to 100, below 1 throws {@link BadRequestException}
-     * @param sort   entries of "field" or "field,asc|desc"; null/blank means "name,asc"
+     * @param sort   entries of "field" or "field,asc|desc"; null/blank means "name,asc"; {@code id} ascending is always appended last as a tiebreaker
+     *               unless {@code id} is already sorted on
      * @param allowedSortFields whitelist of sortable fields; unknown field throws {@link BadRequestException}
      */
     public static Pageable of(Integer page, Integer size, List<String> sort, Set<String> allowedSortFields) {
@@ -66,6 +72,10 @@ public final class PageRequests {
                 }
             }
             orders.add(new Sort.Order(dir, field));
+        }
+        // Final tiebreaker so paging order is stable
+        if (orders.stream().noneMatch(o -> o.getProperty().equals("id"))) {
+            orders.add(Sort.Order.asc("id"));
         }
         return PageRequest.of(p, s, Sort.by(orders));
     }
