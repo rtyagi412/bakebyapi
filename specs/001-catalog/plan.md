@@ -77,12 +77,12 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
 
 **Goal:** Product admin CRUD with details and images works end to end.
 
-- [ ] **4.1 Product service and DTOs**
+- [x] **4.1 Product service and DTOs**
   - Do: Create DTOs (`details`, `images`, validation: URL format, max 10, non-negative numbers, serves >= 1), `ProductService` with slug auto-generation and `-2`/`-3` suffixing, explicit-slug collision 409, category existence check (400 on `categoryId`), reactivation requires an active category (409), delete cascades to deactivate variants.
   - Covers: FR 2, 4, 6, 7; AC 2, 6.
   - Depends on: 3.1
   - Done when: service tests cover slug suffixing, bad category, reactivation rule, cascade deactivate.
-- [ ] **4.2 Admin product controller**
+- [x] **4.2 Admin product controller**
   - Do: Create `AdminProductController` at `/api/v1/admin/products` (POST, GET list with `includeInactive`, GET/PUT/DELETE). Responses embed variants (all, in admin) and images; fetch strategy avoids N+1.
   - Covers: FR 2, 6, 7; AC 1, 6.
   - Depends on: 4.1

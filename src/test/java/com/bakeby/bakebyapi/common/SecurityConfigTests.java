@@ -1,6 +1,7 @@
 package com.bakeby.bakebyapi.common;
 
 import com.bakeby.bakebyapi.catalog.service.CategoryService;
+import com.bakeby.bakebyapi.catalog.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -23,9 +24,12 @@ class SecurityConfigTests {
     @Autowired
     private MockMvc mockMvc;
 
-    /** The slice now picks up AdminCategoryController, which needs its service. */
+    /** The slice picks up the admin controllers, which need their services. */
     @MockitoBean
     private CategoryService categoryService;
+
+    @MockitoBean
+    private ProductService productService;
 
     private int status(MockHttpServletRequestBuilder request) throws Exception {
         return mockMvc.perform(request).andReturn().getResponse().getStatus();
