@@ -2,6 +2,7 @@ package com.bakeby.bakebyapi.common.config;
 
 import com.bakeby.bakebyapi.catalog.service.CategoryService;
 import com.bakeby.bakebyapi.catalog.service.ProductService;
+import com.bakeby.bakebyapi.catalog.service.VariantService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -30,6 +31,9 @@ class SecurityConfigTests {
 
     @MockitoBean
     private ProductService productService;
+
+    @MockitoBean
+    private VariantService variantService;
 
     private int status(MockHttpServletRequestBuilder request) throws Exception {
         return mockMvc.perform(request).andReturn().getResponse().getStatus();

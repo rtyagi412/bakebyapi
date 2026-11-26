@@ -16,5 +16,12 @@ public interface VariantRepository extends JpaRepository<Variant, Long> {
 
     List<Variant> findByProductIdAndActiveTrue(Long productId);
 
+    List<Variant> findByProductIdOrderByIdAsc(Long productId);
+
+    List<Variant> findByProductIdAndActiveTrueOrderByIdAsc(Long productId);
+
+    /** Ownership-checked lookup: empty when the variant does not exist or belongs to another product. */
+    Optional<Variant> findByIdAndProductId(Long id, Long productId);
+
     List<Variant> findByProductIdInOrderByIdAsc(Collection<Long> productIds);
 }

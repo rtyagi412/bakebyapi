@@ -92,12 +92,12 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
 
 **Goal:** Variants with prices are managed under a product.
 
-- [ ] **5.1 Variant service and DTOs**
+- [x] **5.1 Variant service and DTOs**
   - Do: Create `VariantService`: unique SKU (409), `priceMinor >= 0`, `compareAtPriceMinor > priceMinor`, SKU pattern, product ownership check (404 when `variantId` is not under `productId`), soft delete, `currency` read from `bakeby.currency`.
   - Covers: FR 3, 6, 7; AC 5, 6.
   - Depends on: 4.1
   - Done when: service tests cover duplicate SKU, price rules, ownership 404.
-- [ ] **5.2 Admin variant controller**
+- [x] **5.2 Admin variant controller**
   - Do: Create `AdminVariantController` at `/api/v1/admin/products/{productId}/variants` (POST, GET list, GET/PUT/DELETE by id).
   - Covers: FR 3, 6, 7; AC 1, 5, 6.
   - Depends on: 5.1, 4.2
