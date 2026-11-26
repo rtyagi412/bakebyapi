@@ -1,5 +1,6 @@
 package com.bakeby.bakebyapi.catalog.repository;
 
+import com.bakeby.bakebyapi.catalog.entity.DietaryType;
 import com.bakeby.bakebyapi.catalog.entity.Product;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +20,31 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsByCategoryIdAndActiveTrue(Long categoryId);
 
     Page<Product> findByActiveTrue(Pageable pageable);
+
+    /**
+     * Public list: active products whose category is active, optionally filtered by category id and dietary type
+     * (a null filter is not applied). Pages products only (no collection fetch), so paging happens in SQL.
+     */
+    @Query(value = """
+            select p from Product p join p.category c
+            where p.active = true and c.active = true
+              and (:categoryId is null or c.id = :categoryId)
+              and (:dietaryType is null or p.details.dietaryType = :dietaryType)
+            """,
+            countQuery = """
+            select count(p) from Product p join p.category c
+            where p.active = true and c.active = true
+              and (:categoryId is null or c.id = :categoryId)
+              and (:dietaryType is null or p.details.dietaryType = :dietaryType)
+            """)
+    Page<Product> findPublic(@Param("categoryId") Long categoryId, @Param("dietaryType") DietaryType dietaryType,
+                             Pageable pageable);
+
+    /** Public lookup: the product and its category must both be active. */
+    Optional<Product> findByIdAndActiveTrueAndCategoryActiveTrue(Long id);
+
+    /** Public lookup: the product and its category must both be active. */
+    Optional<Product> findBySlugAndActiveTrueAndCategoryActiveTrue(String slug);
 
     /** Slugs equal to {@code base} or of the form {@code base-...}; used to pick the next free numeric suffix. */
     @Query("select p.slug from Product p where p.slug = :base or p.slug like concat(:base, '-%')")

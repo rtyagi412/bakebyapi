@@ -14,6 +14,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     Page<Category> findByActiveTrue(Pageable pageable);
 
+    Optional<Category> findByIdAndActiveTrue(Long id);
+
+    Optional<Category> findBySlugAndActiveTrue(String slug);
+
     // Category names are unique ignoring case; backed by the unique index on lower(name) (V2).
     boolean existsByNameIgnoreCase(String name);
 

@@ -12,6 +12,7 @@ import com.bakeby.bakebyapi.common.exception.ConflictException;
 import com.bakeby.bakebyapi.common.util.NameUtil;
 import com.bakeby.bakebyapi.common.exception.NotFoundException;
 import com.bakeby.bakebyapi.common.dto.PageResponse;
+import com.bakeby.bakebyapi.common.util.IdOrSlug;
 import com.bakeby.bakebyapi.common.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,21 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public CategoryResponse get(Long id) {
         return categoryMapper.toResponse(find(id));
+    }
+
+    /** Public list: active categories only. */
+    @Transactional(readOnly = true)
+    public PageResponse<CategoryResponse> listPublic(Pageable pageable) {
+        return PageResponse.from(categoryRepository.findByActiveTrue(pageable).map(categoryMapper::toResponse));
+    }
+
+    /** Public lookup by id (all-digit value) or slug; missing and inactive categories are both 404. */
+    @Transactional(readOnly = true)
+    public CategoryResponse getPublic(String idOrSlug) {
+        return IdOrSlug.resolve(idOrSlug, categoryRepository::findByIdAndActiveTrue,
+                        categoryRepository::findBySlugAndActiveTrue)
+                .map(categoryMapper::toResponse)
+                .orElseThrow(() -> new NotFoundException("Category not found: " + idOrSlug));
     }
 
     @Transactional
