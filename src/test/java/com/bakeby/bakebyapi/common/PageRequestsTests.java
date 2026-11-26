@@ -30,14 +30,15 @@ class PageRequestsTests {
         Pageable p = PageRequests.of(null, null, (String) null, ALLOWED);
         assertThat(p.getPageNumber()).isZero();
         assertThat(p.getPageSize()).isEqualTo(20);
-        assertThat(p.getSort()).isEqualTo(sortOf(Sort.Order.asc("name")));
+        assertThat(p.getSort()).isEqualTo(sortOf(Sort.Order.asc("name"), Sort.Order.asc("id")));
     }
 
     @Test
     void blankSortFallsBackToNameAsc() {
-        assertThat(PageRequests.of(0, 10, "  ", ALLOWED).getSort()).isEqualTo(sortOf(Sort.Order.asc("name")));
+        assertThat(PageRequests.of(0, 10, "  ", ALLOWED).getSort())
+                .isEqualTo(sortOf(Sort.Order.asc("name"), Sort.Order.asc("id")));
         assertThat(PageRequests.of(0, 10, List.<String>of(), ALLOWED).getSort())
-                .isEqualTo(sortOf(Sort.Order.asc("name")));
+                .isEqualTo(sortOf(Sort.Order.asc("name"), Sort.Order.asc("id")));
     }
 
     @Test
@@ -55,21 +56,23 @@ class PageRequestsTests {
 
     @Test
     void sortWithoutDirectionDefaultsToAscending() {
-        assertThat(PageRequests.of(0, 5, "price", ALLOWED).getSort()).isEqualTo(sortOf(Sort.Order.asc("price")));
+        assertThat(PageRequests.of(0, 5, "price", ALLOWED).getSort())
+                .isEqualTo(sortOf(Sort.Order.asc("price"), Sort.Order.asc("id")));
     }
 
     @Test
     void parsesDirectionCaseInsensitively() {
         assertThat(PageRequests.of(0, 5, "price,DESC", ALLOWED).getSort())
-                .isEqualTo(sortOf(Sort.Order.desc("price")));
+                .isEqualTo(sortOf(Sort.Order.desc("price"), Sort.Order.asc("id")));
         assertThat(PageRequests.of(0, 5, "price,Asc", ALLOWED).getSort())
-                .isEqualTo(sortOf(Sort.Order.asc("price")));
+                .isEqualTo(sortOf(Sort.Order.asc("price"), Sort.Order.asc("id")));
     }
 
     @Test
     void supportsMultipleSortEntries() {
         Pageable p = PageRequests.of(0, 5, List.of("price,desc", "name"), ALLOWED);
-        assertThat(p.getSort()).isEqualTo(sortOf(Sort.Order.desc("price"), Sort.Order.asc("name")));
+        assertThat(p.getSort())
+                .isEqualTo(sortOf(Sort.Order.desc("price"), Sort.Order.asc("name"), Sort.Order.asc("id")));
     }
 
     @Test
@@ -99,6 +102,30 @@ class PageRequestsTests {
     void rejectsMoreThanTwoCommaParts() {
         assertThatThrownBy(() -> PageRequests.of(0, 5, "name,asc,x", ALLOWED))
                 .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    void appendsIdAscAsFinalTiebreaker() {
+        Sort sort = PageRequests.of(0, 5, "price,desc", Set.of("price", "id")).getSort();
+        assertThat(sort).containsExactly(Sort.Order.desc("price"), Sort.Order.asc("id"));
+    }
+
+    @Test
+    void appendsIdAfterAllExplicitSortEntries() {
+        Sort sort = PageRequests.of(0, 5, List.of("price,desc", "name"), ALLOWED).getSort();
+        assertThat(sort).containsExactly(Sort.Order.desc("price"), Sort.Order.asc("name"), Sort.Order.asc("id"));
+    }
+
+    @Test
+    void appendsIdTiebreakerToDefaultSort() {
+        assertThat(PageRequests.of(null, null, (String) null, ALLOWED).getSort())
+                .containsExactly(Sort.Order.asc("name"), Sort.Order.asc("id"));
+    }
+
+    @Test
+    void doesNotDuplicateIdWhenSortedByIdExplicitly() {
+        Sort sort = PageRequests.of(0, 5, "id,desc", Set.of("id")).getSort();
+        assertThat(sort).containsExactly(Sort.Order.desc("id"));
     }
 
     @Test
