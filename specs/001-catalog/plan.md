@@ -122,12 +122,12 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
 
 **Goal:** All edge cases and acceptance criteria are proven end to end.
 
-- [ ] **7.1 Edge-case tests**
+- [x] **7.1 Edge-case tests**
   - Do: Add tests for: size clamped to 100, unknown sort 400, malformed JSON 400, concurrent duplicate create (unique violation to 409), numeric-slug rejection, product with zero variants shown publicly with empty `variants`, deleting an already-inactive entity (204).
   - Covers: spec Edge Cases & Error Handling; FR 7.
   - Depends on: Phases 3 to 6
   - Done when: the new tests pass.
-- [ ] **7.2 End-to-end acceptance suite**
+- [x] **7.2 End-to-end acceptance suite**
   - Do: Add one integration test class that walks AC 1 to 8 in order against real Postgres (create category, product, variant, public read, soft delete, 409 cases).
   - Covers: AC 1 to 8.
   - Depends on: 7.1
