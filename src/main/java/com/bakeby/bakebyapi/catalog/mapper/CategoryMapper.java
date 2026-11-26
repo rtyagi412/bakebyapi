@@ -1,9 +1,9 @@
 package com.bakeby.bakebyapi.catalog.mapper;
 
-import com.bakeby.bakebyapi.catalog.domain.Category;
-import com.bakeby.bakebyapi.catalog.web.CategoryCreateRequest;
-import com.bakeby.bakebyapi.catalog.web.CategoryResponse;
-import com.bakeby.bakebyapi.catalog.web.CategoryUpdateRequest;
+import com.bakeby.bakebyapi.catalog.entity.Category;
+import com.bakeby.bakebyapi.catalog.dto.CategoryCreateRequest;
+import com.bakeby.bakebyapi.catalog.dto.CategoryResponse;
+import com.bakeby.bakebyapi.catalog.dto.CategoryUpdateRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

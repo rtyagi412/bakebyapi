@@ -1,14 +1,14 @@
 package com.bakeby.bakebyapi.catalog.mapper;
 
-import com.bakeby.bakebyapi.catalog.domain.Allergen;
-import com.bakeby.bakebyapi.catalog.domain.Product;
-import com.bakeby.bakebyapi.catalog.domain.ProductDetails;
-import com.bakeby.bakebyapi.catalog.web.ProductCreateRequest;
-import com.bakeby.bakebyapi.catalog.web.ProductDetailsRequest;
-import com.bakeby.bakebyapi.catalog.web.ProductDetailsResponse;
-import com.bakeby.bakebyapi.catalog.web.ProductResponse;
-import com.bakeby.bakebyapi.catalog.web.ProductUpdateRequest;
-import com.bakeby.bakebyapi.catalog.web.VariantResponse;
+import com.bakeby.bakebyapi.catalog.entity.Allergen;
+import com.bakeby.bakebyapi.catalog.entity.Product;
+import com.bakeby.bakebyapi.catalog.entity.ProductDetails;
+import com.bakeby.bakebyapi.catalog.dto.ProductCreateRequest;
+import com.bakeby.bakebyapi.catalog.dto.ProductDetailsRequest;
+import com.bakeby.bakebyapi.catalog.dto.ProductDetailsResponse;
+import com.bakeby.bakebyapi.catalog.dto.ProductResponse;
+import com.bakeby.bakebyapi.catalog.dto.ProductUpdateRequest;
+import com.bakeby.bakebyapi.catalog.dto.VariantResponse;
 import java.util.List;
 import java.util.Set;
 import org.mapstruct.Mapper;

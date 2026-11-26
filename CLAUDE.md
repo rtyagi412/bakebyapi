@@ -43,7 +43,8 @@ These apply to all code in this repo. Subagents must follow them.
 
 **Layering and structure**
 
-- Package by feature under `com.bakeby.bakebyapi.<feature>` (e.g. `catalog`), with `web` (controllers, DTOs), `service`, `repository`, `domain` (entities) and `mapper` subpackages. Cross-cutting code (exception handler, config) goes in `common`.
+- Package by feature under `com.bakeby.bakebyapi.<feature>` (e.g. `catalog`), with one subpackage per kind of class: `controller` (REST controllers), `dto` (request and response records), `service`, `repository`, `entity` (JPA entities and enums) and `mapper` (MapStruct). Cross-cutting code goes in `common`, split the same way: `common.exception` (exceptions and the global handler), `common.config` (Spring config and `@ConfigurationProperties`), `common.dto` (shared response types such as `PageResponse`) and `common.util` (helpers such as `SlugUtil`, `PageRequests`).
+- Test classes live in the same package as the class they test.
 - Controllers are thin: validate, call one service method, return a DTO. Business rules and `@Transactional` live in the service layer, not in controllers or repositories.
 - Constructor injection only, via Lombok `@RequiredArgsConstructor` with `final` fields. No field `@Autowired`.
 
@@ -62,7 +63,7 @@ These apply to all code in this repo. Subagents must follow them.
 
 **Exception handling**
 
-- One global `@RestControllerAdvice` in `common` returns `ProblemDetail` for every error. It is the only place that builds error responses.
+- One global `@RestControllerAdvice` in `common.exception` returns `ProblemDetail` for every error. It is the only place that builds error responses.
 - Services throw domain exceptions (`NotFoundException`, `ConflictException`, ...) that extend a common base. Controllers and services never catch exceptions only to build a response, and never return error bodies themselves.
 - Map exceptions to status in the advice: validation to 400 (with an `errors` map), not found to 404, conflicts and `DataIntegrityViolationException` to 409, and a catch-all to 500 that logs the exception and returns no stack trace or internals.
 

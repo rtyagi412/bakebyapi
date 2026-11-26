@@ -1,6 +1,6 @@
 package com.bakeby.bakebyapi.catalog.repository;
 
-import com.bakeby.bakebyapi.catalog.domain.Category;
+import com.bakeby.bakebyapi.catalog.entity.Category;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
 package com.bakeby.bakebyapi.catalog.repository;
 
-import com.bakeby.bakebyapi.catalog.domain.Product;
+import com.bakeby.bakebyapi.catalog.entity.Product;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

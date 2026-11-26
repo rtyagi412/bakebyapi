@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bakeby.bakebyapi.AbstractIntegrationTest;
-import com.bakeby.bakebyapi.catalog.domain.Allergen;
-import com.bakeby.bakebyapi.catalog.domain.Category;
-import com.bakeby.bakebyapi.catalog.domain.DietaryType;
-import com.bakeby.bakebyapi.catalog.domain.Product;
-import com.bakeby.bakebyapi.catalog.domain.ProductDetails;
-import com.bakeby.bakebyapi.catalog.domain.Variant;
+import com.bakeby.bakebyapi.catalog.entity.Allergen;
+import com.bakeby.bakebyapi.catalog.entity.Category;
+import com.bakeby.bakebyapi.catalog.entity.DietaryType;
+import com.bakeby.bakebyapi.catalog.entity.Product;
+import com.bakeby.bakebyapi.catalog.entity.ProductDetails;
+import com.bakeby.bakebyapi.catalog.entity.Variant;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Set;

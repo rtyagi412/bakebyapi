@@ -1,7 +1,7 @@
 package com.bakeby.bakebyapi.catalog.mapper;
 
-import com.bakeby.bakebyapi.catalog.domain.Variant;
-import com.bakeby.bakebyapi.catalog.web.VariantResponse;
+import com.bakeby.bakebyapi.catalog.entity.Variant;
+import com.bakeby.bakebyapi.catalog.dto.VariantResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
