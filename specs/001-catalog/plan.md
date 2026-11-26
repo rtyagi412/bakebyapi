@@ -47,12 +47,12 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
 
 **Goal:** The database schema exists and entities validate against it.
 
-- [ ] **2.1 Flyway migration**
+- [x] **2.1 Flyway migration**
   - Do: Create `src/main/resources/db/migration/V1__catalog.sql` with `category`, `product`, `product_allergen`, `product_image`, `variant`, including unique constraints, checks (price >= 0, compare_at > price), FKs and indexes per the spec Data Model.
   - Covers: FR 10; spec Data Model.
   - Depends on: 1.2, 1.4
   - Done when: the app/test context starts and Flyway applies V1 to the container.
-- [ ] **2.2 Entities and repositories**
+- [x] **2.2 Entities and repositories**
   - Do: Create JPA entities `Category`, `Product` (embedded details, `@ElementCollection` allergens as enum set and ordered images), `Variant`, enums `Allergen` and `DietaryType`, timestamps, and Spring Data repositories with `ddl-auto=validate` passing.
   - Covers: FR 1 to 3, 6; spec Data Model.
   - Depends on: 2.1
