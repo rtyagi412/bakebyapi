@@ -9,6 +9,7 @@ import com.bakeby.bakebyapi.catalog.web.CategoryResponse;
 import com.bakeby.bakebyapi.catalog.web.CategoryUpdateRequest;
 import com.bakeby.bakebyapi.common.BadRequestException;
 import com.bakeby.bakebyapi.common.ConflictException;
+import com.bakeby.bakebyapi.common.NameUtil;
 import com.bakeby.bakebyapi.common.NotFoundException;
 import com.bakeby.bakebyapi.common.PageResponse;
 import com.bakeby.bakebyapi.common.SlugUtil;
@@ -28,14 +29,9 @@ public class CategoryService {
     private final ProductRepository productRepository;
     private final CategoryMapper categoryMapper;
 
-    /** Strips leading and trailing whitespace, including Unicode spaces such as NBSP that String.strip() keeps. */
-    private static String normalizeName(String name) {
-        return name.replaceAll("^[\\s\\p{Z}]+|[\\s\\p{Z}]+$", "");
-    }
-
     @Transactional
     public CategoryResponse create(CategoryCreateRequest request) {
-        String name = normalizeName(request.name());
+        String name = NameUtil.normalize(request.name());
         String slug;
         if (request.slug() != null) {
             slug = SlugUtil.requireValid(request.slug());
@@ -75,7 +71,7 @@ public class CategoryService {
     @Transactional
     public CategoryResponse update(Long id, CategoryUpdateRequest request) {
         Category category = find(id);
-        String name = normalizeName(request.name());
+        String name = NameUtil.normalize(request.name());
         if (request.slug() != null) {
             SlugUtil.requireValid(request.slug());
         }

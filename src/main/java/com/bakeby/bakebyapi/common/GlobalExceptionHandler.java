@@ -94,6 +94,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleApiException(ApiException ex) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
         pd.setTitle(ex.getTitle());
+        if (ex instanceof FieldValidationException fve) {
+            pd.setProperty("errors", fve.getErrors());
+        }
         return pd;
     }
 
