@@ -155,6 +155,19 @@ class CatalogPersistenceTests extends AbstractIntegrationTest {
     }
 
     @Test
+    void rejectsDuplicateCategoryNameIgnoringCase() {
+        cat("Cakes", "cakes");
+        assertThatThrownBy(() -> cat("CAKES", "other")).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void excludesOwnIdWhenCheckingCategoryNameIgnoringCase() {
+        Category c = cat("Cakes", "cakes");
+        assertThat(categories.existsByNameIgnoreCaseAndIdNot("cakes", c.getId())).isFalse();
+        assertThat(categories.existsByNameIgnoreCaseAndIdNot("CAKES", c.getId() + 1)).isTrue();
+    }
+
+    @Test
     void rejectsDuplicateCategorySlug() {
         cat("Cakes", "cakes");
         assertThatThrownBy(() -> cat("Other", "cakes")).isInstanceOf(DataIntegrityViolationException.class);

@@ -10,5 +10,9 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     boolean existsBySlug(String slug);
 
+    // Category names are unique ignoring case; backed by the unique index on lower(name) (V2).
     boolean existsByNameIgnoreCase(String name);
+
+    // For updates: a category may keep its own name (or change its casing).
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }
