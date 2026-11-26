@@ -107,12 +107,12 @@ Build bottom-up: infrastructure first (Postgres via Docker Compose, Flyway, depe
 
 **Goal:** Storefront endpoints return only active data, paginated.
 
-- [ ] **6.1 Public category endpoints**
+- [x] **6.1 Public category endpoints**
   - Do: Create `CategoryController` with `GET /api/v1/categories` (paged) and `/{idOrSlug}` (numeric = id, else slug; inactive gives 404).
   - Covers: FR 5; AC 3.
   - Depends on: 3.1
   - Done when: MockMvc tests cover list, by id, by slug, inactive 404.
-- [ ] **6.2 Public product endpoints**
+- [x] **6.2 Public product endpoints**
   - Do: Create `ProductController` with `GET /api/v1/products` (paged; filters `category` by id or slug, `dietaryType`) and `/{idOrSlug}`. Show only active products in active categories, embedding only active variants and images. Use an entity graph/fetch join so pagination applies to products without N+1.
   - Covers: FR 5, 8, 9 (dietary filter); AC 1, 3, 7.
   - Depends on: 4.2, 5.2

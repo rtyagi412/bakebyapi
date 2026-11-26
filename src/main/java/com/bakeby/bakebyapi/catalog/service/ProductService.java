@@ -1,6 +1,7 @@
 package com.bakeby.bakebyapi.catalog.service;
 
 import com.bakeby.bakebyapi.catalog.entity.Category;
+import com.bakeby.bakebyapi.catalog.entity.DietaryType;
 import com.bakeby.bakebyapi.catalog.entity.Product;
 import com.bakeby.bakebyapi.catalog.entity.Variant;
 import com.bakeby.bakebyapi.catalog.mapper.ProductMapper;
@@ -19,6 +20,7 @@ import com.bakeby.bakebyapi.common.exception.FieldValidationException;
 import com.bakeby.bakebyapi.common.util.NameUtil;
 import com.bakeby.bakebyapi.common.exception.NotFoundException;
 import com.bakeby.bakebyapi.common.dto.PageResponse;
+import com.bakeby.bakebyapi.common.util.IdOrSlug;
 import com.bakeby.bakebyapi.common.util.SlugUtil;
 import java.util.HashSet;
 import java.util.List;
@@ -78,13 +80,41 @@ public class ProductService {
         Page<Product> page = includeInactive
                 ? productRepository.findAll(pageable)
                 : productRepository.findByActiveTrue(pageable);
-        List<ProductResponse> content = toResponses(page.getContent());
+        List<ProductResponse> content = toResponses(page.getContent(), false);
         return PageResponse.from(new PageImpl<>(content, page.getPageable(), page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
     public ProductResponse get(Long id) {
-        return toResponses(List.of(find(id))).getFirst();
+        return toResponses(List.of(find(id)), false).getFirst();
+    }
+
+    /**
+     * Public list: active products in active categories, embedding only active variants. Products are paged in
+     * SQL, then images, allergens and active variants are loaded for that page with one query each.
+     *
+     * @param category    optional category id (all digits) or slug; an unknown or inactive category is 404
+     * @param dietaryType optional dietary type filter
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<ProductResponse> listPublic(String category, DietaryType dietaryType, Pageable pageable) {
+        Long categoryId = category == null ? null : IdOrSlug.resolve(category,
+                        categoryRepository::findByIdAndActiveTrue, categoryRepository::findBySlugAndActiveTrue)
+                .map(Category::getId)
+                .orElseThrow(() -> new NotFoundException("Category not found: " + category));
+        Page<Product> page = productRepository.findPublic(categoryId, dietaryType, pageable);
+        List<ProductResponse> content = toResponses(page.getContent(), true);
+        return PageResponse.from(new PageImpl<>(content, page.getPageable(), page.getTotalElements()));
+    }
+
+    /** Public lookup by id (all-digit value) or slug; missing, inactive or in an inactive category is 404. */
+    @Transactional(readOnly = true)
+    public ProductResponse getPublic(String idOrSlug) {
+        Product product = IdOrSlug.resolve(idOrSlug,
+                        productRepository::findByIdAndActiveTrueAndCategoryActiveTrue,
+                        productRepository::findBySlugAndActiveTrueAndCategoryActiveTrue)
+                .orElseThrow(() -> new NotFoundException("Product not found: " + idOrSlug));
+        return toResponses(List.of(product), true).getFirst();
     }
 
     @Transactional
@@ -112,7 +142,7 @@ public class ProductService {
         }
         Product saved = productRepository.saveAndFlush(product);
         log.info("Updated product id={}", id);
-        return toResponses(List.of(saved)).getFirst();
+        return toResponses(List.of(saved), false).getFirst();
     }
 
     /** Soft delete that also deactivates the product's variants. Idempotent for already inactive products. */
@@ -136,9 +166,9 @@ public class ProductService {
 
     /**
      * Maps products to responses with a fixed number of queries regardless of how many products there are:
-     * one each for images, allergens and variants (all variants, active or not, for admin views).
+     * one each for images, allergens and variants (all variants for admin views, active ones only for public).
      */
-    private List<ProductResponse> toResponses(List<Product> products) {
+    private List<ProductResponse> toResponses(List<Product> products, boolean activeVariantsOnly) {
         if (products.isEmpty()) {
             return List.of();
         }
@@ -146,8 +176,10 @@ public class ProductService {
         productRepository.fetchImages(ids);
         productRepository.fetchAllergens(ids);
         String currency = properties.currency();
-        Map<Long, List<VariantResponse>> variantsByProduct = variantRepository.findByProductIdInOrderByIdAsc(ids)
-                .stream()
+        List<Variant> variants = activeVariantsOnly
+                ? variantRepository.findByProductIdInAndActiveTrueOrderByIdAsc(ids)
+                : variantRepository.findByProductIdInOrderByIdAsc(ids);
+        Map<Long, List<VariantResponse>> variantsByProduct = variants.stream()
                 .collect(Collectors.groupingBy(v -> v.getProduct().getId(),
                         Collectors.mapping(v -> variantMapper.toResponse(v, currency), Collectors.toList())));
         return products.stream()
